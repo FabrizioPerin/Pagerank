@@ -17,16 +17,17 @@ PageRankerExample >> importantClassesIn: aBrowserEnvironment [
 			at: class theNonMetaClass name
 			ifAbsentPut: [ 
 				class superclass isNil 
-					ifTrue: [ OrderedCollection new ] 
-					ifFalse: [ OrderedCollection with: class superclass name ]].
+					ifTrue: [ IdentitySet new ] 
+					ifFalse: [ IdentitySet with: class superclass name ]].
 		(class compiledMethodAt: selector) literalsDo: [ :each |
-			(each isVariableBinding and: [ graph includesKey: each key ])
-				ifTrue: [ collection addLast: each key ] ] ].
+			(each isVariableBinding and: [ each key isSymbol ])
+				ifTrue: [ collection add: each key ] ] ].
 	ranks := PageRanker new 
 		outlinks: [ :each | graph at: each ifAbsent: [ #() ] ];
 		runOn: graph keys.
-	result := graph keys 
-		asSortedCollection: [ :a :b | (ranks at: a) >= (ranks at: b) ].
+	result := (graph keys 
+		asSortedCollection: [ :a :b | (ranks at: a) >= (ranks at: b) ])
+		collect: [ :each | each -> (ranks at: each) ].
 	^ result first: 25
 ]
 
@@ -35,18 +36,24 @@ PageRankerExample >> importantSelectorsIn: aBrowserEnvironment [
 	"self new importantSelectorsIn: (BrowserEnvironment new)"
 	"self new importantSelectorsIn: (BrowserEnvironment new forPackageNames: #('TextLint-Model'))"
 	
-	| graph ranks result |
+	| graph ranks result primitives |
 	graph := IdentityDictionary new.
 	aBrowserEnvironment classesAndSelectorsDo: [ :class :selector |
-		| collection |
-		collection := graph at: selector ifAbsentPut: [ OrderedCollection new ].
-		(class compiledMethodAt: selector) messagesDo: [ :each |
-			each isSymbol
-				ifTrue: [ collection addLast: each ] ] ].
+		| collection method |
+		collection := graph
+			at: selector 
+			ifAbsentPut: [ OrderedCollection new ].
+		method := class compiledMethodAt: selector.
+		method primitive = 0 ifTrue: [ 
+			method messagesDo: [ :each |
+				each isSymbol
+					ifTrue: [ collection add: each ] ] ] ].
+	(graph keys count: #size) inspect.
 	ranks := PageRanker new 
 		outlinks: [ :each | graph at: each ifAbsent: [ #() ] ];
 		runOn: graph keys.
-	result := graph keys 
-		asSortedCollection: [ :a :b | (ranks at: a) >= (ranks at: b) ].
+	result := (graph keys 
+		asSortedCollection: [ :a :b | (ranks at: a) >= (ranks at: b) ])
+		collect: [ :each | each -> (ranks at: each) ].
 	^ result first: 25
 ]

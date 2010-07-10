@@ -29,6 +29,23 @@ PageRanker >> iterations: anInteger [
 	iterations := anInteger
 ]
 
+{ #category : #private }
+PageRanker >> mappingFor: aCollection [
+	| zork nodes |
+	zork := Object new.
+	nodes := IdentityDictionary new: aCollection size.
+	aCollection 
+		do: [ :node | nodes at: node put: PageRankerItem new ].
+	nodes keysAndValuesDo: [ :node :item |
+		item 
+			outlinks: (((outlinks value: node)
+				collect: [ :each | nodes at: each ifAbsent: [ zork ] ])
+				reject: [ :each | each == zork or: [ each == node ] ]);
+			previous: 1.0 / aCollection size;
+			current: 1.0 - damping ].
+	^ nodes
+]
+
 { #category : #accessing }
 PageRanker >> outlinks: aBlock [
 	"Defines how the children of a given element are retrieved."
@@ -36,26 +53,17 @@ PageRanker >> outlinks: aBlock [
 	outlinks := aBlock
 ]
 
-{ #category : #actions }
-PageRanker >> runOn: aNodeCollection [
-	| previous |
-	previous := IdentityDictionary new: aNodeCollection size.
-	aNodeCollection
-		do: [ :each | previous at: each put: 1.0 / aNodeCollection size ].
+{ #category : #public }
+PageRanker >> runOn: aCollection [
+	| nodes items inverse |
+	nodes := self mappingFor: aCollection.
+	items := nodes values asArray.
+	inverse :=  1.0 - damping.
 	iterations timesRepeat: [
-		| current |
-		current := IdentityDictionary new: aNodeCollection size.
-		previous keysAndValuesDo: [ :node :rank |
-			| children |
-			current
-				at: node
-				ifAbsentPut: [ 1.0 - damping ].
-			(children := (outlinks value: node) reject: [ :each | each == node ]) do: [ :child |
-				current
-					at: child
-					put: (current
-						at: child
-						ifAbsent: [ 1.0 - damping ]) + (damping * rank / children size) ] ].
-		previous := current ].
-	^ previous
+		items do: [ :item |
+			item outlinks
+				do: [ :child | child accumulate: (damping * item previous / item outlinks size) ] ].
+		items do: [ :item | item reset: inverse ] ].
+	nodes associationsDo: [ :assoc | assoc value: assoc value previous ].
+	^ nodes
 ]
