@@ -4,7 +4,9 @@ Class {
 	#instVars : [
 		'damping',
 		'iterations',
-		'outlinks'
+		'outlinks',
+		'stepBlock',
+		'stepper'
 	],
 	#category : #'PageRank-Core'
 }
@@ -19,7 +21,8 @@ PageRanker >> damping: aNumber [
 { #category : #initialization }
 PageRanker >> initialize [
 	self iterations: 100; damping: 0.85.
-	self outlinks: [ :node | #() ]
+	self outlinks: [ :node | #() ].
+	self stepper: [ :count | ]
 ]
 
 { #category : #accessing }
@@ -59,11 +62,19 @@ PageRanker >> runOn: aCollection [
 	nodes := self mappingFor: aCollection.
 	items := nodes values asArray.
 	inverse :=  1.0 - damping.
-	iterations timesRepeat: [
+	1 to: iterations do: [ :counter |
 		items do: [ :item |
 			item outlinks
 				do: [ :child | child accumulate: (damping * item previous / item outlinks size) ] ].
-		items do: [ :item | item reset: inverse ] ].
+		items do: [ :item | item reset: inverse ].
+		stepper value: counter ].
 	nodes associationsDo: [ :assoc | assoc value: assoc value previous ].
 	^ nodes
+]
+
+{ #category : #accessing }
+PageRanker >> stepper: aOneArgumentBlock [
+	"The block evaluated with each iteration step."
+	
+	stepper := aOneArgumentBlock
 ]

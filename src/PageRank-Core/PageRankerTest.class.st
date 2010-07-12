@@ -6,7 +6,7 @@ Class {
 		'ranks',
 		'ranker'
 	],
-	#category : #'PageRank-Core'
+	#category : #'PageRank-Tests'
 }
 
 { #category : #'as yet unclassified' }
