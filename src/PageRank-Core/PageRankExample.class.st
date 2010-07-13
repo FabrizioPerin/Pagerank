@@ -53,7 +53,7 @@ PageRankExample >> importantObjectsIn: anArray [
 	graph := IdentityDictionary new: anArray size.
 	anArray do: [ :each |
 		| children |
-		children := OrderedCollection new.
+		children := OrderedCollection with: each class.
 		each class isVariable ifTrue: [
 			1 to: each basicSize do: [ :index |
 				children add: (each basicAt: index) ] ].
