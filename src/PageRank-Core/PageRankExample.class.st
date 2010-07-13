@@ -7,24 +7,24 @@ Class {
 { #category : #examples }
 PageRankExample >> importantClassesIn: aBrowserEnvironment [
 	"self new importantClassesIn: (BrowserEnvironment new)"
-	"self new importantClassesIn: (BrowserEnvironment new forPackageNames: #('TextLint-Model'))"
+	"self new importantClassesIn: (BrowserEnvironment new forPackageNames: #('VB-Regex'))"
 	
 	| graph ranks result |
 	graph := IdentityDictionary new.
 	aBrowserEnvironment classesAndSelectorsDo: [ :class :selector |
-		| collection |
-		class isTrait ifFalse: [ 
+		class isTrait ifFalse: [
+			| collection |
 			collection := graph 
 				at: class theNonMetaClass name
-				ifAbsentPut: [ 
-					class superclass isNil 
-						ifTrue: [ OrderedCollection new ] 
-						ifFalse: [ OrderedCollection with: class superclass name ] ].
+				ifAbsentPut: [
+					class theNonMetaClass superclass isNil
+						ifTrue: [ OrderedCollection new ]
+						ifFalse: [ OrderedCollection with: class theNonMetaClass superclass name ] ].
 			((class compiledMethodAt: selector) literals allButLast: 2) do: [ :each |
 				(each isVariableBinding and: [ each key isSymbol ])
 					ifTrue: [ collection add: each key ] ] ] ].
 	ranks := PageRank new
-		referenced: [ :each | graph at: each ifAbsent: [ #() ] ];
+		referenced: [ :each | graph at: each ];
 		runOn: graph keys.
 	result := (graph keys 
 		asSortedCollection: [ :a :b | (ranks at: a) >= (ranks at: b) ])
@@ -38,7 +38,7 @@ PageRankExample >> importantObjects [
 	
 	| objects |
 	Smalltalk garbageCollect.
-	objects := OrderedCollection new.
+	objects := OrderedCollection withAll: (-1024 to: 1024).
 	self systemNavigation allObjectsDo: [ :each |
 		(objects == each or: [ objects collector == each ])
 			ifFalse: [ objects addLast: each ] ].
@@ -47,7 +47,7 @@ PageRankExample >> importantObjects [
 
 { #category : #examples }
 PageRankExample >> importantObjectsIn: anArray [
-	"(self new importantObjects first: 100) inspect"
+	"self new importantObjects inspect"
 	
 	| graph ranks |
 	graph := IdentityDictionary new: anArray size.
@@ -69,6 +69,7 @@ PageRankExample >> importantObjectsIn: anArray [
 { #category : #examples }
 PageRankExample >> importantSelectorsIn: aBrowserEnvironment [
 	"self new importantSelectorsIn: (BrowserEnvironment new)"
+	"self new importantSelectorsIn: (BrowserEnvironment new forPackageNames: #('VB-Regex'))"
 	
 	| graph ranks result |
 	graph := IdentityDictionary new.
@@ -78,7 +79,7 @@ PageRankExample >> importantSelectorsIn: aBrowserEnvironment [
 			at: selector 
 			ifAbsentPut: [ OrderedCollection new ].
 		method := class compiledMethodAt: selector.
-		method primitive = 0 ifTrue: [ 
+		method primitive = 0 ifTrue: [
 			method messagesDo: [ :each |
 				each isSymbol
 					ifTrue: [ collection add: each ] ] ] ].
